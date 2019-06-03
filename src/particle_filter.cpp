@@ -169,7 +169,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double prev_temp_dist = 0;
 
 			//FIXME - used 100 here, but this should be size of map - to increment through the full map to get the right association
-			for (int j = 0; j < 100; ++j) {
+			for (int k = 0; k < 100; ++k) {
 
 				// DWB - NOTE if using dataAssociation member-Function then - "Predicted" corresponds with the map
 				//                                                            "Observations" corresponds to particle
@@ -179,7 +179,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 				if (temp_dist < prev_temp_dist) {
 
-					//particles[i].id = map_landmarks[j].id;
+					particles[i].associations[j] = map_landmarks[k].id;
 
 				}
 
