@@ -1,5 +1,16 @@
-# Overview
-This repository contains all the code needed to complete the final project for the Localization course in Udacity's Self-Driving Car Nanodegree.
+# Danny Bynum Initial Submission
+Initial project submission - all functions have been attempted and the particle/estimate loosely follows the car around in the SIM but probably not close enough.  See picture below.
+
+
+[//]: # (Image References)
+
+[image1]: ./Initial_Sim_Output.PNG "Initial Simulation Output Screenshot"
+
+
+![alt text][image1]
+
+
+
 
 #### Submission
 All you will need to submit is your `src` directory. You should probably do a `git pull` before submitting to verify that your project passes the most up-to-date version of the grading code (there are some parameters in `src/main.cpp` which govern the requirements on accuracy and run time).

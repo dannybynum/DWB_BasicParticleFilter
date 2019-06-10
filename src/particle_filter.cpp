@@ -269,8 +269,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		//vector<double> particle_weight_elements;
 		//particle_weight_elements.clear();
 
-		double measure_goodness_sum = 0;
-		double measure_goodness_product= 1;
+		//double measure_goodness_sum = 0;
+		//double measure_goodness_product= 1;
 		
 
 		for (int ja = 0; ja<particles[i].associations.size(); ++ja){
@@ -287,8 +287,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			//I want the "closest/associated" ACTUAL map x and y which I get by getting the ".x_f" from the landmark_list AT
 			//the id that is most closely associated with the particle measurement -- this is kept in particles.associations list
 			
-			double mu_x = map_landmarks.landmark_list[particles[i].associations[ja]-1].x_f;   //FIXME - not sure this is the best way but just noticed the index and id are only off by one
-																						      // would probably be better to actually "look up" the id I suppose - maybe with a loop
+			//using the "id" stored in the associations vector AS an index by subtracting 1
+			//this only works because the landmark_list is sequentially ordered as it is read in
+			//FIXME a more general approach would be better here - look up the data associated with each ID
+			//could do this with a for loop that loops through all of the landmarks
+			double mu_x = map_landmarks.landmark_list[particles[i].associations[ja]-1].x_f;
+			
 			//double mu_x = map_landmarks.landmark_list[41].x_f;
 			double mu_y = map_landmarks.landmark_list[particles[i].associations[ja]-1].y_f;
 
@@ -302,12 +306,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			term2_exponent = (pow(x_obs - mu_x, 2) / (2 * pow(sig_x, 2)))
 				+ (pow(y_obs - mu_y, 2) / (2 * pow(sig_y, 2)));
 
+			double sense_goodness = 0;
+
+			sense_goodness = (term1_gauss_norm * exp(-term2_exponent));
+
 			// calculate weight using normalization terms and exponent
 			//vector<double> particle_weight_elements
 			
 			
-			measure_goodness_sum += (term1_gauss_norm * exp(-term2_exponent));
-			measure_goodness_product *= (term1_gauss_norm * exp(-term2_exponent));
+			//measure_goodness_sum += (term1_gauss_norm * exp(-term2_exponent));
+			//measure_goodness_product *= (term1_gauss_norm * exp(-term2_exponent));
 			//particle_weight_elements.push_back(term1_gauss_norm * exp(-term2_exponent));
 
 			//LEFT OFF HERE on JUNE-4 - PICK UP HERE - not sure why sometimes more than 3 print out in here....hmmmmmm
@@ -320,36 +328,32 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			//FIXME - this might work but do I really want to use the old particle weight each delta_time step?
 			//maybe but not sure this is how it worked in the lesson - maybe just wipe out the old weight and the
 			//new weight becomes the multipled together multi-var-gaussian
-			
-			//here is where I left off - need to figure out the best way to calculate the weight of each particle ... seems to go to zero...
-			//changed weights to try to normalize it but the weights still evaluate to zero (very small number) after the first particle set..
-			//I could move on for now and try to implement the code that picks the best particles and see if that makes things work better
-			// even though I don't like or understand why they start evaluating to zero - maybe ignore that and try to make some progress
-			// without fully understanding that at the moment
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//particles[i].weight *= weight;
+			if (ja == 0) {
+				particles[i].weight = sense_goodness;  //set to current sensor-weight the first time through
+			}
+			else
+			{
+				particles[i].weight *= sense_goodness;
+			} 
 
-
+			//particles[i].weight = (term1_gauss_norm * exp(-term2_exponent)); //normalize so that result is between 0 and 1
 
 		}
 
-		particles[i].weight = measure_goodness_product / measure_goodness_sum; //normalize so that result is between 0 and 1
+		//particles[i].weight = measure_goodness_product / measure_goodness_sum; //normalize so that result is between 0 and 1
+
+		
 
 		accumulate_part_weights += particles[i].weight;
 
 		//dwb debug - print out to terminal to make sure setting it up properly
 		//this is printing for each particle so it is in the outer for loop here
-		if (i < 2) {
+		if (i < 5) {
 		std::cout << "particle " << particles[i].id << " " << "size_of_x_vect " << particles[i].sense_x.size()<< 
 			" size_of_associations_vect " << particles[i].associations.size()<< std::endl;
 		}
 
-		if (i < 2) {
+		if (i < 5) {
 			std::cout << "particle " << particles[i].id << " " << " weight " << particles[i].weight << std::endl;
 		}
 
@@ -368,7 +372,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 	//loop through particles one more time to do normalization
 	for (int m = 0; m < num_particles; ++m) {
-		particles[m].weight = particles[m].weight/accumulate_part_weights; //normalize so that between 0 and 1
+		if (accumulate_part_weights > 0) {
+			particles[m].weight = particles[m].weight / accumulate_part_weights; //normalize so that between 0 and 1
+		}
+		else {
+			particles[m].weight = .1;
+			std::cout << "Saved A Divide By Zero - Need to T-Shoot" << std::endl;
+		}
 
 		if (m < 5) {
 			std::cout << "particle " << particles[m].id << " " << "normd weight" << particles[m].weight << std::endl;
