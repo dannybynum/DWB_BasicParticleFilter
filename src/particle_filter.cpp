@@ -33,7 +33,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   (and others in this file).
    */
 
-  num_particles = 5;
+  num_particles = 5000;
 
 vector<Particle> initial_particles;
 
@@ -66,7 +66,7 @@ for (int i = 0; i < num_particles; ++i) {
 
 
 	//dwb debug - print out to terminal to make sure setting it up properly
-	if (i < 2) {
+	if (i < 5) {
 		std::cout << "initial_particles " << initial_particles[i].id << " " << initial_particles[i].x << " " << initial_particles[i].y << " "
 			<< initial_particles[i].theta << std::endl;
 	}
@@ -91,13 +91,17 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 	 *  http://www.cplusplus.com/reference/random/default_random_engine/
 	 */
 
-	std::default_random_engine dwb_genit2;
+	
 
 	// Creating normal distributions centered about 0 with given standard deviations - to add in noise
-	std::normal_distribution<double> pred_noise_x(0, std_pos[0]);
-	std::normal_distribution<double> pred_noise_y(0, std_pos[1]);
-	std::normal_distribution<double> pred_noise_theta(0, std_pos[2]);
+	//std::normal_distribution<double> pred_noise_x(0, std_pos[0]);
+	//std::normal_distribution<double> pred_noise_y(0, std_pos[1]);
+	//std::normal_distribution<double> pred_noise_theta(0, std_pos[2]);
 
+	/////////////////////////////////
+	//June-11 I could insert a "first time through" flag here like init and then set previous velocity and skip the update the first time
+
+	std::default_random_engine dwb_genit2;
 
 	for (int i = 0; i < num_particles; ++i) {
 
@@ -105,19 +109,53 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 		//changing heading based on heading rate and time
 		//also add in normally distributed random noise
 		//FIXME - see 21. Explanation of Code walk through - she describes noise differently.
+
+
+		///////////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////////
+		
+		//June-11 could do some t-shoot here to see how these distributions are getting generated - specificly related to updating/changing movement_x
+		
+
+
+		double movement_x = (velocity / yaw_rate)*
+			(sin(particles[i].theta + (yaw_rate*delta_t)) - sin(particles[i].theta));
+
+		double movement_y = (velocity / yaw_rate)*
+			(cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate*delta_t)));
+
+		double movement_theta = (yaw_rate * delta_t);
+
+		//June-11, why does it seem to not do well with matching to sensor measurements which are ABOVE the car??  something about how doing the transformation??
+		std::normal_distribution<double> meas_with_noise_x(movement_x, std_pos[0]*6);    //June-11 was using *6, *6, *1 here
+		std::normal_distribution<double> meas_with_noise_y(movement_y, std_pos[1]*6);
+		std::normal_distribution<double> meas_with_noise_theta(movement_theta, std_pos[2]*1);
+
+
+		particles[i].x += meas_with_noise_x(dwb_genit2);
+
+		particles[i].y += meas_with_noise_y(dwb_genit2);
+
+		particles[i].theta += meas_with_noise_theta(dwb_genit2);
+
+		///////////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////////
+
 				
-		particles[i].x += (velocity / yaw_rate)*
-						  (sin(particles[i].theta + (yaw_rate*delta_t)) - sin(particles[i].theta)) + 
-						  pred_noise_x(dwb_genit2);
-		
-		particles[i].y += (velocity / yaw_rate)*
-						  (cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate*delta_t))) +
-						  pred_noise_y(dwb_genit2);
-		
-		//leaving incorrect formula in place just for comparison purposes, but commenting out
-		//particles[i].y += (velocity / yaw_rate)*(cos(particles[i].theta) - (cos(particles[i].theta*yaw_rate*delta_t))) + pred_noise_y(dwb_genit2);
-		
-		particles[i].theta += (yaw_rate * delta_t) + pred_noise_theta(dwb_genit2);
+		//particles[i].x += (velocity / yaw_rate)*
+		//				  (sin(particles[i].theta + (yaw_rate*delta_t)) - sin(particles[i].theta)) + 
+		//				  pred_noise_x(dwb_genit2);
+		//
+		//particles[i].y += (velocity / yaw_rate)*
+		//				  (cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate*delta_t))) +
+		//				  pred_noise_y(dwb_genit2);
+		//
+		////leaving incorrect formula in place just for comparison purposes, but commenting out
+		////particles[i].y += (velocity / yaw_rate)*(cos(particles[i].theta) - (cos(particles[i].theta*yaw_rate*delta_t))) + pred_noise_y(dwb_genit2);
+		//
+		//particles[i].theta += (yaw_rate * delta_t) + pred_noise_theta(dwb_genit2);
 
 		
 		
@@ -128,8 +166,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 		//particles[i].theta += velocity * delta_t + pred_noise_theta(dwb_genit2);
 
 		//dwb debug - print out to terminal to make sure setting it up properly
-		if (i < 2) {
-			std::cout << "particles updated with prediction and noise " << particles[i].id << " " << particles[i].x << " " << particles[i].y << " "
+		if (i < 0) {
+			std::cout << "Prediction Step/Function: " << particles[i].id << " " << particles[i].x << " " << particles[i].y << " "
 				<< particles[i].theta << std::endl;
 		}
 	}
@@ -290,7 +328,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			//using the "id" stored in the associations vector AS an index by subtracting 1
 			//this only works because the landmark_list is sequentially ordered as it is read in
 			//FIXME a more general approach would be better here - look up the data associated with each ID
-			//could do this with a for loop that loops through all of the landmarks
+			//could do this with a for loop that loops through all of the landmarks and stops when id matches then pick
+			//that corresponding x_f and y_f
 			double mu_x = map_landmarks.landmark_list[particles[i].associations[ja]-1].x_f;
 			
 			//double mu_x = map_landmarks.landmark_list[41].x_f;
@@ -309,6 +348,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double sense_goodness = 0;
 
 			sense_goodness = (term1_gauss_norm * exp(-term2_exponent));
+
+			//June-11 experimenting with setting a cap on sense_goodness, FIXME probably not what we want to do
+			if (sense_goodness < 0.00000000000000000001) {
+				sense_goodness = 0.00000000000000000001;
+			}
 
 			// calculate weight using normalization terms and exponent
 			//vector<double> particle_weight_elements
@@ -348,14 +392,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 		//dwb debug - print out to terminal to make sure setting it up properly
 		//this is printing for each particle so it is in the outer for loop here
-		if (i < 5) {
-		std::cout << "particle " << particles[i].id << " " << "size_of_x_vect " << particles[i].sense_x.size()<< 
-			" size_of_associations_vect " << particles[i].associations.size()<< std::endl;
+		if (i < 0) {
+		std::cout << "Particle Association Step: "<<"particle " << particles[i].id << " " << "size_x_sense " << particles[i].sense_x.size()<< 
+			" size_of_assoc " << particles[i].associations.size()<< std::endl;
 		}
 
-		if (i < 5) {
-			std::cout << "particle " << particles[i].id << " " << " weight " << particles[i].weight << std::endl;
-		}
+		//if (i < 1) {
+		//	std::cout << "particle " << particles[i].id << " " << " weight " << particles[i].weight << std::endl;
+		//}
 
 
 	
@@ -377,11 +421,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		}
 		else {
 			particles[m].weight = .1;
-			std::cout << "Saved A Divide By Zero - Need to T-Shoot" << std::endl;
+			if (m < 1) {
+				std::cout << "Update Weights Function:  Saved A Divide By Zero - Need to T-Shoot" << std::endl;
+			}
 		}
 
-		if (m < 5) {
-			std::cout << "particle " << particles[m].id << " " << "normd weight" << particles[m].weight << std::endl;
+		if (m < 0) {
+			std::cout << "Update Weights Function: " << "particle " << particles[m].id << " " << "normd weight" << particles[m].weight << std::endl;
 		}
 		
 	}
@@ -398,7 +444,7 @@ void ParticleFilter::resample() {
 	std::vector<Particle> resampled_particles;
 	
 	double temp_find_max_weight = 0;
-	double accumulate_part_weights = 0;
+	//double accumulate_part_weights = 0;
 
 	//loop through particles to find max weight
 	for (int i = 0; i < num_particles; ++i) {
@@ -408,33 +454,41 @@ void ParticleFilter::resample() {
 
 	}
 
-	std::cout << "temp_find_max_weight " << temp_find_max_weight << std::endl;
+	//std::cout << "temp_find_max_weight " << temp_find_max_weight << std::endl;
 
 	//clear out the resampled_particles vector between runs
 	resampled_particles.clear();
+
+	std::default_random_engine dwb_genit3;
+	//dwb_genit3.seed(particles[i].sense_x[i]);               //FIXME not sure this is a great "random" seed but might work ok
+
+	std::default_random_engine dwb_genit4;
+	//dwb_genit4.seed(particles[i].sense_y[i]);               //FIXME - same note as above
+
+
+	double curr_sample_wheel_beta = 0;
+	int sample_index = 0;
+
+	//using uniform int distribution to chose a random index
+	std::uniform_int_distribution<int> random_part_index_dist(0,(num_particles - 1));
+
+	// using uniform distribution - following python implmentation from lesson5
+	std::uniform_real_distribution<double> random_samp_whl_beta(0, (2 * temp_find_max_weight));
+	
+	sample_index = random_part_index_dist(dwb_genit3);
+	curr_sample_wheel_beta = random_samp_whl_beta(dwb_genit4);
 
 	//loop through particles to do resampling
 	for (int i = 0; i < num_particles; ++i) {
 
 
 		//dwb using random engine to get random value within distribution -this was used in lesson materials
-		std::default_random_engine dwb_genit3;
-		std::default_random_engine dwb_genit4;
+		//std::default_random_engine dwb_genit3(particles[i].sense_x); //using the sense values as a seed
+		//std::default_random_engine dwb_genit4(particles[i].sense_y); //using the sense values as a seed
 
-		double curr_sample_wheel_beta = 0;
-		int sample_index = 0;
-
-		//using uniform int distribution to chose a random index
-		std::uniform_int_distribution<int> random_part_index_dist(0,num_particles-1);
-		
-		// using uniform distribution - following python implmentation from lesson5
-		std::uniform_real_distribution<double> random_samp_whl_beta(0, 2*temp_find_max_weight);
-
-		sample_index = random_part_index_dist(dwb_genit3);
-		curr_sample_wheel_beta = random_samp_whl_beta(dwb_genit4);
-
-		if (i < 5) {
-			std::cout << "sample_index " << sample_index << " " << "beta " << curr_sample_wheel_beta << std::endl;
+	
+		if (i < 0) {
+			std::cout << "Resampling Function: " << "sample_index " << sample_index << " " << "beta " << curr_sample_wheel_beta << std::endl;
 		}
 
 		// this while loop will pass through to using the current sample index to select the particle if beta is smaller than the current weight
