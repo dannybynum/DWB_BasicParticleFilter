@@ -33,7 +33,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   (and others in this file).
    */
 
-  num_particles = 5000;
+  num_particles = 2000;
 
 vector<Particle> initial_particles;
 
@@ -128,9 +128,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 		double movement_theta = (yaw_rate * delta_t);
 
 		//June-11, why does it seem to not do well with matching to sensor measurements which are ABOVE the car??  something about how doing the transformation??
-		std::normal_distribution<double> meas_with_noise_x(movement_x, std_pos[0]*6);    //June-11 was using *6, *6, *1 here
-		std::normal_distribution<double> meas_with_noise_y(movement_y, std_pos[1]*6);
-		std::normal_distribution<double> meas_with_noise_theta(movement_theta, std_pos[2]*1);
+		std::normal_distribution<double> meas_with_noise_x(movement_x, std_pos[0]*3);    //June-11 was using *6, *6, *1 here
+		std::normal_distribution<double> meas_with_noise_y(movement_y, std_pos[1]*3);
+		std::normal_distribution<double> meas_with_noise_theta(movement_theta, std_pos[2]*2);
 
 
 		particles[i].x += meas_with_noise_x(dwb_genit2);
