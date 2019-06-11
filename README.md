@@ -4,7 +4,7 @@ Initial project submission - all functions have been attempted and the particle/
 
 [//]: # (Image References)
 
-[image1]: ./Initial_Sim_Output.PNG "Initial Simulation Output Screenshot"
+[image1]: ./Initial_Sim_Output2.PNG "Initial Simulation Output Screenshot"
 
 
 ![alt text][image1]
