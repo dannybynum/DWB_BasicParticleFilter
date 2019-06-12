@@ -33,7 +33,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   (and others in this file).
    */
 
-  num_particles = 2000;
+  num_particles = 5000;
 
 vector<Particle> initial_particles;
 
@@ -90,16 +90,20 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 	 *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	 *  http://www.cplusplus.com/reference/random/default_random_engine/
 	 */
+	double yaw_rate_check = double(1E-3);
 
-	
+	//std::cout << "Yaw Rate < " << yaw_rate <<" fabs(yaw_rate): "<< fabs(yaw_rate) << std::endl;
+
+
+	if (fabs(yaw_rate) < yaw_rate_check) {
+		std::cout << "Yaw Rate < "<< yaw_rate_check<<" , Will Use Linear Model" << std::endl;
+	}
 
 	// Creating normal distributions centered about 0 with given standard deviations - to add in noise
 	//std::normal_distribution<double> pred_noise_x(0, std_pos[0]);
 	//std::normal_distribution<double> pred_noise_y(0, std_pos[1]);
 	//std::normal_distribution<double> pred_noise_theta(0, std_pos[2]);
 
-	/////////////////////////////////
-	//June-11 I could insert a "first time through" flag here like init and then set previous velocity and skip the update the first time
 
 	std::default_random_engine dwb_genit2;
 
@@ -117,20 +121,36 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 		
 		//June-11 could do some t-shoot here to see how these distributions are getting generated - specificly related to updating/changing movement_x
 		
+		double movement_x = 0;
+		double movement_y = 0;
+		double movement_theta = 0;
+		
 
+		if (fabs(yaw_rate) > yaw_rate_check) {
 
-		double movement_x = (velocity / yaw_rate)*
-			(sin(particles[i].theta + (yaw_rate*delta_t)) - sin(particles[i].theta));
+			movement_x = (velocity / yaw_rate)*
+				(sin(particles[i].theta + (yaw_rate*delta_t)) - sin(particles[i].theta));
 
-		double movement_y = (velocity / yaw_rate)*
-			(cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate*delta_t)));
+			movement_y = (velocity / yaw_rate)*
+				(cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate*delta_t)));
 
-		double movement_theta = (yaw_rate * delta_t);
+			movement_theta = (yaw_rate * delta_t);
+
+		}
+		else {
+			movement_x = velocity*delta_t*cos(particles[i].theta);
+
+			movement_y = velocity*delta_t*sin(particles[i].theta);
+
+			movement_theta = yaw_rate_check;
+
+		}
+
 
 		//June-11, why does it seem to not do well with matching to sensor measurements which are ABOVE the car??  something about how doing the transformation??
-		std::normal_distribution<double> meas_with_noise_x(movement_x, std_pos[0]*3);    //June-11 was using *6, *6, *1 here
-		std::normal_distribution<double> meas_with_noise_y(movement_y, std_pos[1]*3);
-		std::normal_distribution<double> meas_with_noise_theta(movement_theta, std_pos[2]*2);
+		std::normal_distribution<double> meas_with_noise_x(movement_x, std_pos[0]*1);    //June-11 was using *6, *6, *1 here
+		std::normal_distribution<double> meas_with_noise_y(movement_y, std_pos[1]*1);
+		std::normal_distribution<double> meas_with_noise_theta(movement_theta, std_pos[2]*1);
 
 
 		particles[i].x += meas_with_noise_x(dwb_genit2);
@@ -245,7 +265,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			//now each particle has a vector of x,y positions that correspond to map coordinates of where it would place landmarks according to the given observation (which was actually from the car)
 			//this will serve as a comparison to how good a particular particle represents the car - given the map and the observations -- since the actual observations are from the ACTUAL car - with some noise/uncertainty
 			particles[i].sense_x.push_back(particles[i].x + (cos(particles[i].theta)*observations[j].x) - (sin(particles[i].theta)*observations[j].x));
-			particles[i].sense_y.push_back(particles[i].y + (sin(particles[i].theta)*observations[j].x) + (cos(particles[i].theta)*observations[j].y));
+			particles[i].sense_y.push_back(particles[i].y + (sin(particles[i].theta)*observations[j].y) + (cos(particles[i].theta)*observations[j].y));  //June-12 found error here
 
 			temp_measure_associateme.x = particles[i].sense_x[j];
 			temp_measure_associateme.y = particles[i].sense_y[j];
@@ -348,11 +368,24 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double sense_goodness = 0;
 
 			sense_goodness = (term1_gauss_norm * exp(-term2_exponent));
-
+			
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
 			//June-11 experimenting with setting a cap on sense_goodness, FIXME probably not what we want to do
-			if (sense_goodness < 0.00000000000000000001) {
-				sense_goodness = 0.00000000000000000001;
-			}
+			//if (sense_goodness < 0.0000000000000000000001) {
+			//	sense_goodness = 0.0000000000000000000001;
+			//	if (i < 2) { //print out only for first couple of particles
+			//		std::cout << "Weight Too Low, Insert Cap On Sensor Goodness Value" << std::endl;
+			//	}
+			//}
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+
 
 			// calculate weight using normalization terms and exponent
 			//vector<double> particle_weight_elements
@@ -420,8 +453,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			particles[m].weight = particles[m].weight / accumulate_part_weights; //normalize so that between 0 and 1
 		}
 		else {
-			particles[m].weight = .1;
-			if (m < 1) {
+			particles[m].weight = .001;
+			if (m < 0) {
 				std::cout << "Update Weights Function:  Saved A Divide By Zero - Need to T-Shoot" << std::endl;
 			}
 		}
@@ -459,10 +492,10 @@ void ParticleFilter::resample() {
 	//clear out the resampled_particles vector between runs
 	resampled_particles.clear();
 
-	std::default_random_engine dwb_genit3;
+	std::default_random_engine dwb_genit3(particles[1].sense_x[1]);
 	//dwb_genit3.seed(particles[i].sense_x[i]);               //FIXME not sure this is a great "random" seed but might work ok
 
-	std::default_random_engine dwb_genit4;
+	std::default_random_engine dwb_genit4(particles[1].sense_x[1]); //June-12 trying to seed dwb_genit4
 	//dwb_genit4.seed(particles[i].sense_y[i]);               //FIXME - same note as above
 
 
@@ -474,20 +507,22 @@ void ParticleFilter::resample() {
 
 	// using uniform distribution - following python implmentation from lesson5
 	std::uniform_real_distribution<double> random_samp_whl_beta(0, (2 * temp_find_max_weight));
-	
-	sample_index = random_part_index_dist(dwb_genit3);
-	curr_sample_wheel_beta = random_samp_whl_beta(dwb_genit4);
 
+	sample_index = random_part_index_dist(dwb_genit3);                ///FIXME need to think about whether I want this in or out.
+	
+
+	
 	//loop through particles to do resampling
 	for (int i = 0; i < num_particles; ++i) {
 
+		curr_sample_wheel_beta += random_samp_whl_beta(dwb_genit4);
 
 		//dwb using random engine to get random value within distribution -this was used in lesson materials
 		//std::default_random_engine dwb_genit3(particles[i].sense_x); //using the sense values as a seed
 		//std::default_random_engine dwb_genit4(particles[i].sense_y); //using the sense values as a seed
 
 	
-		if (i < 0) {
+		if (i < 1) {
 			std::cout << "Resampling Function: " << "sample_index " << sample_index << " " << "beta " << curr_sample_wheel_beta << std::endl;
 		}
 
