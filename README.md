@@ -1,50 +1,22 @@
-# Danny Bynum Initial Submission
-Initial project submission - all functions have been attempted and the particle/estimate loosely follows the car around in the SIM but probably not close enough.  See picture below.
+# Danny Bynum Project Submission
+Basic Particle Filter has been implemented and the simulation window indicats that the criteria has been passed.
 
 
-[//]: # (Image References)
-
-[image1]: ./Initial_Sim_Output2.PNG "Initial Simulation Output Screenshot"
-
-
-![alt text][image1]
-
-
-
-
-#### Submission
-All you will need to submit is your `src` directory. You should probably do a `git pull` before submitting to verify that your project passes the most up-to-date version of the grading code (there are some parameters in `src/main.cpp` which govern the requirements on accuracy and run time).
-
-## Project Introduction
+## Project Description From Udacity
 Your robot has been kidnapped and transported to a new location! Luckily it has a map of this location, a (noisy) GPS estimate of its initial location, and lots of (noisy) sensor and control data.
 
 In this project you will implement a 2 dimensional particle filter in C++. Your particle filter will be given a map and some initial localization information (analogous to what a GPS would provide). At each time step your filter will also get observation and control data.
 
 ## Running the Code
-This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases)
+I worked in Windows Visual Studio and utilized the Linux Subsystem.  In order to copy the file back over from Windows to Linux Subsystem Location - and Compile and run I used the following command fairly often (from the build folder) :-):
+```
+cd .. && cp /mnt/c/users/bynum/documents/udacity/term2/DWB_BasicParticleFilter/src/particle_filter.cpp src/ && cd build && cmake .. && make && ./particle_filter
+```
 
-This repository includes two files that can be used to set up and install uWebSocketIO for either Linux or Mac systems. For windows you can use either Docker, VMware, or even Windows 10 Bash on Ubuntu to install uWebSocketIO.
+## Description of the files
+I only had to modivy src/particle_filter.cpp ... but I had to read through particle_filter.h to understand the classes and structures I was using.  It wasn't too important to look at the "main.cpp" code that was provided if you understand the fundamental concepts of how the particle filter is supposed to be implemented - but the main.cpp drives everything including all of the calls to the functions I created in particle_filter.cpp
 
-Once the install for uWebSocketIO is complete, the main program can be built and ran by doing the following from the project top directory.
-
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./particle_filter
-
-Alternatively some scripts have been included to streamline this process, these can be leveraged by executing the following in the top directory of the project:
-
-1. ./clean.sh
-2. ./build.sh
-3. ./run.sh
-
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
-
-Note that the programs that need to be written to accomplish the project are src/particle_filter.cpp, and particle_filter.h
-
-The program main.cpp has already been filled out, but feel free to modify it.
-
+Udacity's comments:
 Here is the main protocol that main.cpp uses for uWebSocketIO in communicating with the simulator.
 
 INPUT: values provided by the simulator to the c++ program
@@ -93,13 +65,7 @@ OUTPUT: values provided by the c++ program to the simulator
 ["best_particle_sense_y"] <= list of sensed y positions
 
 
-Your job is to build out the methods in `particle_filter.cpp` until the simulator output says:
-
-```
-Success! Your particle filter passed!
-```
-
-# Implementing the Particle Filter
+# Udacity Description of the files associated with the project
 The directory structure of this repository is as follows:
 
 ```
@@ -123,9 +89,6 @@ root
     |   particle_filter.h
 ```
 
-The only file you should modify is `particle_filter.cpp` in the `src` directory. The file contains the scaffolding of a `ParticleFilter` class and some associated methods. Read through the code, the comments, and the header file `particle_filter.h` to get a sense for what this code is expected to do.
-
-If you are interested, take a look at `src/main.cpp` as well. This file contains the code that will actually be running your particle filter and calling the associated methods.
 
 ## Inputs to the Particle Filter
 You can find the inputs to the particle filter in the `data` directory.
@@ -139,16 +102,3 @@ You can find the inputs to the particle filter in the `data` directory.
 ### All other data the simulator provides, such as observations and controls.
 
 > * Map data provided by 3D Mapping Solutions GmbH.
-
-## Success Criteria
-If your particle filter passes the current grading code in the simulator (you can make sure you have the current version at any time by doing a `git pull`), then you should pass!
-
-The things the grading code is looking for are:
-
-
-1. **Accuracy**: your particle filter should localize vehicle position and yaw to within the values specified in the parameters `max_translation_error` and `max_yaw_error` in `src/main.cpp`.
-
-2. **Performance**: your particle filter should complete execution within the time of 100 seconds.
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
